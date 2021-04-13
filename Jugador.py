@@ -4,5 +4,3 @@ class Jugador:
         self.numero = numero
         self.num_monedas = 2
         self.cartas = cartas
-    def mano(self, cartas):
-        
