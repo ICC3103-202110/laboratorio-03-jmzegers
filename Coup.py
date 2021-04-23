@@ -1,36 +1,91 @@
 import time
-from Carta import Carta
-from Jugador import Jugador
 import random
 
-#Funcion para dudar si un jugador posee una cierta carta
-def Duda (accion, jugador_turno, jugador_duda):
-    s=False
-    j=0
-    nombre_carta = "a"
-    if accion == "T":
-        nombre_carta = "Duque"
-    elif accion == "A":
-        nombre_carta = "Embajador"
-    elif accion == "S":
-        nombre_carta = "Capitan"
-    while j<len(jugador_turno.cartas):
-        if jugador_turno.cartas[j].tipo == nombre_carta:
-            s=True
-        j+=1
-    if s==True:
-        carta_perdida=int(input(jugador_turno.nombre + " si tiene la carta "  + nombre_carta + "elije que carta perder 1/2"))-1
-        jugador_duda.cartas.pop(carta_perdida)
-    else:
-        carta_perdida=int(input(jugador_turno.nombre + " no tiene la carta " + nombre_carta + " elije que carta perder 1/2"))-1
-        jugador_turno.cartas.pop(carta_perdida)
-    
-def Neutralizacion (accion):
+#Funcion para barajar el mazo
+def Barajar (mazo):
+    mazo_listo = []
+    i = len(mazo) - 1
+    while i >= 0:
+        lugar_azar = random.randint(0, i)
+        carta_azar = mazo[lugar_azar]
+        mazo_listo.append(carta_azar)
+        mazo.pop(lugar_azar)
+        i -= 1
+    return mazo_listo
+
+#Funcion para desafiar la accion de un jugador
+def Duda (accion, jugador_turno, jugadores, mazo):
     #Jugador que se opone
     j=1
     print("que jugador es :")
     for i in jugadores:
         print("para jugador: " + i.nombre + " escriba " + str(j))
+        j+=1
+    
+    jugador_duda=int(input())
+    
+    j = 0
+    while j < len(jugadores):
+        if j == jugador_duda - 1:
+            jugador_duda2 = jugadores[j]
+        j += 1
+    
+    s=False
+    j=0
+    nombre_carta = "a"
+    carta_perdida = 1
+    #Impuestos: tres monedas
+    if accion == "T":
+        nombre_carta = "Duque"
+    #Asesinato
+    elif accion == "A":
+        nombre_carta = "Asesino"
+    #Robo
+    elif accion == "S":
+        nombre_carta = "Capitan"
+    elif accion == "X":
+        nombre_carta = "Embajador"
+    
+    while j<len(jugador_turno.cartas):
+        if jugador_turno.cartas[j].tipo == nombre_carta:
+            s=True
+            carta_a_botar = jugador_turno.cartas[j]
+            ind_carta_a_botar = j
+            break
+        j+=1
+    
+    #El jugador sí tiene la carta
+    if s==True:
+        carta_perdida=int(input(jugador_turno.nombre + " si tiene la carta "  + nombre_carta + "elije que carta perder 1/2"))-1
+        jugador_duda2.cartas.pop(carta_perdida)
+        
+        #El jugador pierde la carta y la agrega al mazo
+        print(jugador_turno.nombre + " tiene que botar la carta que ha revelado y ponerla en el mazo")
+        mazo.insert(0, carta_a_botar)
+        jugador_turno.cartas.pop(ind_carta_a_botar)
+        
+        #El mazo se baraja
+        print("Luego, se baraja nuevamente el mazo")
+        mazo_barajado = Barajar(mazo)
+        tamanno_mazo = len(mazo_barajado) - 1
+        
+        #El jugador saca la ultima carta del mazo
+        print("Por ultimo, se le agrega una carta nueva a la mano")
+        jugador_turno.cartas.append(mazo_barajado(tamanno_mazo))
+        
+    else:
+        carta_perdida=int(input(jugador_turno.nombre + " no tiene la carta " + nombre_carta + " elije que carta perder 1/2"))-1
+        jugador_turno.cartas.pop(carta_perdida)
+
+    return s
+
+#Funcion para neutralizar la accion del jugador    
+def Neutralizacion (accion, jugador_turno, jugadores):
+    j=1
+    print("que jugador es :")
+    for i in jugadores:
+        if i != jugador_turno:
+            print("para jugador: " + i.nombre + " escriba " + str(j))
         j+=1
     jugador_duda=int(input())
     j = 0
@@ -51,7 +106,19 @@ def Neutralizacion (accion):
     return jugador_acusa
 
 #Funcion para dudar una Neutralizacion
-def Duda_Neutralizacion (accion, jugador_turno, jugador_acusa):
+def Duda_Neutralizacion (accion, jugador_acusado, jugadores, mazo):
+    j=1
+    print("Elija que jugador es :")
+    for i in jugadores:
+        if i != jugador_acusado:
+            print("para jugador: " + i.nombre + " escriba " + str(j))
+        j+=1
+    jugador_duda=int(input())
+    j = 0
+    while j < len(jugadores):
+        if j == jugador_duda - 1:
+            jugador_acusa = jugadores[j]
+        j += 1
     tiene_carta = False
     nombre_carta2 = "a"
     if accion == "E":
@@ -61,100 +128,114 @@ def Duda_Neutralizacion (accion, jugador_turno, jugador_acusa):
     elif accion == "S":
         nombre_carta = "Embajador"
         nombre_carta2 = "Capitan"
-    for c in jugador_turno.cartas:
+    for c in jugador_acusado.cartas:
         if c.tipo == nombre_carta or c.tipo == nombre_carta2:
             tiene_carta = True
+            carta_a_botar = jugador_acusado.cartas[j]
+            ind_carta_a_botar = j
+            break
     if tiene_carta == True:
-        print(jugador_turno + " tiene la carta adecuada!")
-    
-
-def Scanner_Respuestas (respuestas_validas, respuesta):
-    while respuesta not in respuestas_validas:
-        print("Respuesta invalida")
-
-
-
-print("¡Bienvenido al juego de Coup!")
-
-print("¿Cuantos jugadores van a participar?")
-num_jugadores = int(input("Solo pueden tres o cuatro: "))
-
-#Asegurarse de que solo puedan haber tres o cuatro jugadores
-while (num_jugadores != 3 and num_jugadores != 4):
-    print("Numero invalido")
-    time.sleep(2)
-    print("¿Cuantos jugadores van a participar?")
-    num_jugadores = int(input("Solo pueden tres o cuatro: "))
-
-i = 0
-nombres_jugadores = []
-while i < num_jugadores:
-    nombre = input("Jugador " + str(i + 1) + " escriba su nombre: ")
-    nombres_jugadores.append(nombre)
-    i += 1
-
-lista = []
-lista.append("Duque")
-lista.append("Asesino")
-lista.append("Capitan")
-lista.append("Embajador")
-lista.append("Condesa")
-
-#Aqui creo el mazo
-mazo = []
-for c in lista:
-    i = 1
-    while (i <= 3):
-        c1 = Carta(c)
-        mazo.append(c1)
-        i += 1
+        print(jugador_acusado + " tiene la carta adecuada!")
         
-#Barajar las cartas
-mazo_barajado = []
-i = len(mazo) - 1
-while i >= 0:
-    lugar_azar = random.randint(0, i)
-    carta_azar = mazo[lugar_azar]
-    mazo_barajado.append(carta_azar)
-    mazo.pop(lugar_azar)
-    i -= 1
+        carta_perdida=int(input(jugador_acusado.nombre + " si tiene la carta "  + nombre_carta + "elije que carta perder 1/2"))-1
+        jugador_acusa.cartas.pop(carta_perdida)
+        
+        #El jugador pierde la carta y la agrega al mazo
+        print(jugador_acusado.nombre + " tiene que botar la carta que ha revelado y ponerla en el mazo")
+        mazo.insert(0, carta_a_botar)
+        jugador_acusado.cartas.pop(ind_carta_a_botar)
+        
+        #El mazo se baraja
+        print("Luego, se baraja nuevamente el mazo")
+        mazo_barajado = Barajar(mazo)
+        tamanno_mazo = len(mazo_barajado) - 1
+        
+        #El jugador saca la ultima carta del mazo
+        print("Por ultimo, se le agrega una carta nueva a la mano")
+        jugador_acusado.cartas.append(mazo_barajado(tamanno_mazo))
+        
+    else:
+        carta_perdida=int(input(jugador_acusado.nombre + " no tiene la carta " + nombre_carta + " elije que carta perder 1/2"))-1
+        jugador_acusado.cartas.pop(carta_perdida)
+        
+    return tiene_carta
 
-#Se reparten dos cartas a cada jugador
-i = 0
-jugadores = []
-while i < num_jugadores:
-    cartas_jug = []
-    cartas_jug.append(mazo_barajado[0])
-    cartas_jug.append(mazo_barajado[1])
-    mazo_barajado.pop(0)
-    mazo_barajado.pop(0)
-    nombre = nombres_jugadores[i]
-    jugador = Jugador(nombre, i + 1, 2, cartas_jug)
-    jugadores.append(jugador)
-    i += 1
-
-print("Ahora vamos a mostrar las cartas de cada jugador")
-
-print("")
-#Mostrarle a cada jugador sus cartas
-for j in jugadores:
-    print("Cartas del jugador " + j.numero + ":")
-    print("Presione Enter para continuar")
-    print("")
-    for carta in j.cartas:
-        print(carta.tipo)
-    print("")
-    input("Presione Enter para continuar")
+def Asesinar (jugadores, jugador_turno):
+    print("a quien desea asesinar?")
+    j=0
+    for i in jugadores:
+        print("para jugador: " + i.nombre + " escriba " + str(j + 1))
+        j+=1
+    asesinato=int(input()) - 1
+    if len(jugador_turno.cartas) == 1:
+        print("Fuiste asesinado")
+        print("Has perdido tu ultimo")
+        print("Has sido eliminado del juego")
+        jugadores.pop(asesinato)
+    else:
+        carta_perdida=int(input("fuiste asesinado "+jugadores[asesinato]+" elije que carta perder 1/2"))-1
+        jugadores[asesinato].nombre.cartas.pop(carta_perdida) 
+        
+def Intercambio (jugador_turno, mazo_barajado):
+    while len(jugador_turno.cartas) != 0:
+        mazo_barajado.insert(0, jugador_turno.cartas[0])
+        jugador_turno.cartas.pop(0)
+    opciones = []
     i = 1
-    while i <= 40:
-        print("")
+    while i <= 4:
+        num_cartas = len(mazo_barajado)
+        opciones.append(mazo_barajado[num_cartas - 1])
+        mazo_barajado.pop(num_cartas - 1)
         i += 1
-
+    i = 1
+    for carta in opciones:
+        print(str(i) + "." + carta.tipo)
+        i += 1 
+    num = int(input("Escriba el numero de la primera carta que quiera elegir"))
+    carta_elegida = opciones[num - 1]
+    opciones.pop(num - 1)
+    jugador_turno.cartas.append(carta_elegida)
+    print("")
+    for carta in opciones:
+        print(str(i) + "." + carta.tipo)
+        i += 1 
+    num = int(input("Escriba el numero de la segunda carta que quiera elegir"))
+    carta_elegida = opciones[num]
+    jugador_turno.cartas.append(carta_elegida)
+    for carta in opciones:
+        mazo_barajado.append(carta)
+        
+def Robo (jugadores, jugador_turno):
+    j = 0
+    a = True
+    while a == True:
+        print("Elija al jugador al que quiera robar: ")
+        for i in jugadores:
+            if i != jugador_turno:
+                print("para jugador: " + i.nombre + " escriba " + str(j))
+            j+=1
+        num_jugador=int(input())
+        j = 0
+        while j < len(jugadores):
+            if j == num_jugador:
+                jugador_a_robar = jugadores[j]
+            j += 1
+        if jugador_a_robar.num_monedas == 0:
+            print("Este jugador no tiene suficientes monedas")
+        else:
+            if jugador_a_robar.num_monedas == 1:
+                print("Este jugador solo tiene una moneda")
+                jugador_a_robar.num_monedas -= 1
+                jugador_turno.num_monedas += 1
+            else:
+                jugador_a_robar.num_monedas -= 2
+                jugador_turno.num_monedas += 2
+            break
 
 
 
 class Coup:
-    def Juego(jugadores):
+    def Juego(jugadores, mazo_barajado):
           jugadores = jugadores
         
           #Comienzo del juego
@@ -271,7 +352,14 @@ class Coup:
                             print("No tiene suficientes monedas")
                         else:
                             puede_realizar="s"
-                            
+                    
+                    elif accion == "S":
+                        for j in jugadores:
+                            if j != jugador_turno:
+                                if j.num_monedas > 0:
+                                    puede_realizar = "s"
+                        if puede_realizar == "n":
+                            print("Ninguno de los jugadores tiene suficientes monedas")
                         
                     elif accion == "A":
                         if jugador_turno.num_monedas < 3:
@@ -290,162 +378,121 @@ class Coup:
                 if accion == "I":
                     jugador_turno.num_monedas += 1
                 
-                #El jugador toma la accion de Ayuda Externa
-                #Esta accion puede ser bloqueada
-                #por un jugador que tenga la carta de Duque
-                elif accion == "E":
-                    r = input("¿Alguien quiere usar una Neutralizacion en contra de "  + jugador_turno.nombre + "? [S/N]").capitalize()
-                    if r == "S":
-                        jug_neutralizador = Neutralizacion("E")
+                #El jugador toma la accion de Cobrar Impuestos
+                elif accion == "T":
+                    oposicion=input("¿Alguien quiere desafiar esta accion? [S/N] ").capitalize()
+                    if oposicion == "S":
+                        #Llamo a la funcion
+                        tiene_carta = Duda(accion, jugador_turno, jugadores, mazo_barajado)
+                        
+                        #Se lleva a cabo la accion normalmente
+                        if tiene_carta == True:
+                            jugador_turno.num_monedas += 3
+                        
                     else:
-                        jugador_turno.num_monedas += 2
+                        jugador_turno.num_monedas += 3
+                
                     
+                
                 #El jugador toma la accion de Hacer un Golpe
                 elif accion == "C":
                     print("a quien desea hacer el golpe?")
                     j=0
                     for i in jugadores:
-                        print("para jugador: " + i.nombre + "escriba " + str(j))
+                        if i.nombre!=jugador_turno.nombre:
+                            print("para jugador: " + i.nombre + " escriba " + str(j))
                         j+=1
                     golpe=int(input())
-                    carta_perdida=int(input("te hicieron un golpe "+golpe.nombre+" elije que carta perder 1/2"))-1
-                    golpe.nombre.cartas.pop(carta_perdida)
+                    j = 0
+                    while j < len(jugadores):
+                        if j == golpe - 1:
+                            jugador_golpeado = jugadores[j]
+                        j += 1
+                    
+                    if len(jugador_golpeado.cartas)==1:
+                        jugador_golpeado.cartas.pop(0)
+                    else:
+                        carta_perdida=int(input("te hicieron un golpe "+jugador_golpeado.nombre+" elije que carta perder 1/2"))-1
+                        jugador_golpeado.cartas.pop(carta_perdida)
                 
-                #El jugador toma la accion de Cobrar Impuestos
-                elif accion == "T":
-                    jugador_turno.num_monedas += 3
+               
+                
+               
+                
+               #El jugador toma la accion de Ayuda Externa
+                #Esta accion puede ser bloqueada
+                #por un jugador que tenga la carta de Duque
+                elif accion == "E":
+                    neutr = input("¿Alguien quiere neutralizar la accion del jugador? [S/N]").capitalize()
+                    if neutr == "S":
+                        jugador_acusa = Neutralizacion(accion, jugador_turno, jugadores)
+                        
+                        duda_neutr = input("¿Alguien desafia esta Neutralizacion? [S/N]").capitalize()
+                        if duda_neutr == "S":
+                            tiene_carta = Duda_Neutralizacion(accion, jugador_acusa, jugadores, mazo_barajado)
+                    else:
+                        jugador_turno.num_monedas += 2
                 
                 #El jugador toma la accion de Asesinar
                 elif accion == "A":
-                    
-                    
                     jugador_turno.num_monedas -= 3
-                    r = input("¿Alguien quiere usar una Neutralizacion en contra de "  + jugador_turno.nombre + "? [S/N]").capitalize()
-                    if r == "S":
-                        jug_neutralizador = Neutralizacion("A")
-                        r = input("""¿Alguien duda la Neutralizacion de """ +
-                                  jug_neutralizador.nombre + """? [S/N]""").capitalize()
+                    
+                    oposicion=input("¿Alguien quiere desafiar esta accion? [S/N] ").capitalize()
+                    if oposicion == "S":
+
+                        #Llamo a la funcion
+                        tiene_carta = Duda(accion, jugador_turno, jugadores, mazo_barajado)
                         
+                        #Se lleva a cabo la accion normalmente
+                        if tiene_carta == True:
+                                Asesinar(jugadores, jugador_turno)
                     else:
-                        #El asesinato
-                        #Asesinar
-                        print("a quien desea asesinar?")
-                        j=0
-                        for i in jugadores:
-                            print("para jugador: " + i.nombre + " escriba " + str(j + 1))
-                            j+=1
-                        asesinato=int(input()) - 1
-                        if len(jugador_turno.cartas) == 1:
-                            print("Fuiste asesinado")
-                            print("Has perdido tu ultimo")
-                            print("Has sido eliminado del juego")
-                            jugadores.pop(asesinato)
+                        neutr = input("¿Alguien quiere neutralizar la accion del jugador? [S/N]").capitalize()
+                        if neutr == "S":
+                            jugador_acusa = Neutralizacion(accion, jugador_turno, jugadores)
+                            
+                            duda_neutr = input("¿Alguien desafia esta Neutralizacion? [S/N]").capitalize()
+                            if duda_neutr == "S":
+                                tiene_carta = Duda_Neutralizacion(accion, jugador_acusa, jugadores, mazo_barajado)
+                            
                         else:
-                            carta_perdida=int(input("fuiste asesinado "+jugadores[asesinato]+" elije que carta perder 1/2"))-1
-                            jugadores[asesinato].nombre.cartas.pop(carta_perdida)
+                            Asesinar(jugadores, jugador_turno)
+
                 
                 #El jugador toma la accion de Intercambiar
                 elif accion == "X":
-                    while len(jugador_turno.cartas) != 0:
-                        mazo_barajado.insert(0, jugador_turno.cartas[0])
-                        jugador_turno.cartas.pop(0)
-                    opciones = []
-                    i = 1
-                    while i <= 4:
-                        num_cartas = len(mazo_barajado)
-                        opciones.append(mazo_barajado[num_cartas - 1])
-                        mazo_barajado.pop(num_cartas - 1)
-                        i += 1
-                    i = 1
-                    for carta in opciones:
-                        print(str(i) + "." + carta.tipo)
-                        i += 1 
-                    num = int(input("Escriba el numero de la primera carta que quiera elegir"))
-                    carta_elegida = opciones[num - 1]
-                    opciones.pop(num - 1)
-                    jugador_turno.cartas.append(carta_elegida)
-                    print("")
-                    for carta in opciones:
-                        print(str(i) + "." + carta.tipo)
-                        i += 1 
-                    num = int(input("Escriba el numero de la segunda carta que quiera elegir"))
-                    carta_elegida = opciones[num]
-                    jugador_turno.cartas.append(carta_elegida)
-                    for carta in opciones:
-                        mazo_barajado.append(carta)
+                    oposicion=input("¿Alguien quiere desafiar esta accion? [S/N] ").capitalize()
+                    if oposicion == "S":
+                        #Llamo a la funcion
+                        tiene_carta = Duda(accion, jugador_turno, jugadores, mazo_barajado)
+                        #Se lleva a cabo la accion normalmente
+                        if tiene_carta == True:
+                            Intercambio(jugador_turno, mazo_barajado)
+                    
+                    else:
+                        Intercambio(jugador_turno, mazo_barajado)
+                    
                 
                 #El jugador toma la accion de Robar
                 elif accion == "S":
-                    r = input("¿Alguien quiere usar una Neutralizacion en contra de "  + jugador_turno.nombre + "? [S/N]").capitalize()
-                    if r == "S":
-                        jugador_acusa = Neutralizacion("S")
-                        r = input("¿Alguien duda de esta accion?")
-                    else:
-                        for j in jugadores:
-                            if (j != jugador_turno):
-                                print(j.nombre)
-                        print(" ")
-                        nombre_elegido = input("Elija al jugador al que quiera robar: ").capitalize()
-                        for j in jugadores:
-                            if j.nombre == nombre_elegido:
-                                if j.num_monedas <= 2:
-                                    j.num_monedas -= 2
-                                else:
-                                    j.num_monedas = 0
-                
-                
-                
-                #Reaccion
-                #aca debe ir un if accion =! "I" or accion =! "E" or accion =! "C":
-                
-                
-                if accion == "T" or accion == "A" or accion == "S":
-                    oposicion=input("¿alguien se opone? [S/N] ").capitalize()
+                    oposicion=input("¿Alguien quiere desafiar esta accion? [S/N] ").capitalize()
                     if oposicion == "S":
-                        #Jugador que se opone
-                        j=1
-                        print("que jugador es :")
-                        for i in jugadores:
-                            print("para jugador: " + i.nombre + " escriba " + str(j))
-                            j+=1
-                        
-                        jugador_duda=int(input())
-                        
-                        j = 0
-                        while j < len(jugadores):
-                            if j == jugador_duda - 1:
-                                jugador_acusa = jugadores[j]
-                            j += 1
-                        
                         #Llamo a la funcion
-                        Duda(accion, jugador_turno, jugador_acusa)
-                    
-                    
-                
-                
-                
-                
-                
-                #Neutralizacion (counteraction)
-                #Solo las acciones E (Ayuda Externa), A (Asesinato), S (Robo) pueden ser neutralizadas
-                if accion == "E" or accion == "A" or accion == "S":
-                    r = input("¿Alguien quiere usar una Neutralizacion en contra de "  + jugador_turno.nombre + "? [S/N]").capitalize()
-                    if r == "S":
-                        #Jugador que se opone
-                        j=1
-                        print("que jugador es :")
-                        for i in jugadores:
-                            print("para jugador: " + i.nombre + " escriba " + str(j))
-                            j+=1
-                        jugador_duda=int(input())
-                        j = 0
-                        while j < len(jugadores):
-                            if j == jugador_duda - 1:
-                                jugador_acusa = jugadores[j]
-                            j += 1
-                        #jugador_acusa es el jugador que usa una Neutralizacion
-                        
-                
+                        tiene_carta = Duda(accion, jugador_turno, jugadores, mazo_barajado)
+                        #Se lleva a cabo la accion normalmente
+                        if tiene_carta == True:
+                            Robo(jugadores, jugador_turno)
+                    else:
+                        neutr = input("¿Alguien quiere neutralizar la accion del jugador? [S/N]").capitalize()
+                        if neutr == "S":
+                            jugador_acusa = Neutralizacion(accion, jugador_turno, jugadores)
+                            
+                            duda_neutr = input("¿Alguien desafia esta Neutralizacion? [S/N]").capitalize()
+                            if duda_neutr == "S":
+                                tiene_carta = Duda_Neutralizacion(accion, jugador_acusa, jugadores, mazo_barajado)
+                            
+                        else:
+                            Robo(jugadores, jugador_turno)
                         
                 
                 
@@ -462,106 +509,17 @@ class Coup:
                     break
                 
                 num_jugadores = len(jugadores)
-                if (turno == num_jugadores):
+                i=0
+                while i<num_jugadores:
+                    jugadores[i].numero=i+1
+                    i+=1
+                if turno >= num_jugadores:
+                    
                     turno = 0
                 turno += 1
-
-
-
-# print("")
-# #Fin del juego
-# print("¡Se acabo el juego!")
-# print("¡El ganador del juego es " + jugadores[0].nombre + "!")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# #Duda a Impuestos, lo que significa que debe tener la carta Duque
-        # if accion=="T" :
-        #     s=0
-        #     j=0
-        #     while j<len(jugador_turno.cartas):
-        #         if jugador_turno.cartas[j].tipo=="Duque":
-        #             s=1
-        #         j+=1
-        #     if s==1:
-        #         carta_perdida=int(input(jugador_turno.nombre + """ si tiene la carta Duque
-        #                   elije que carta perder 1/2"""))-1
                 
-        #         jugador_duda.cartas.pop(carta_perdida)
-        #     else:
-        #         carta_perdida=int(input(jugador_turno.nombre + """ no tiene la carta Duque
-        #                   elije que carta perder 1/2"""))-1
-        #         jugador_turno.cartas.pop(carta_perdida)
-                
-        # #Duda al Asesinato, lo que significa que debe tener la carta Asesino        
-        # elif accion=="A":
-        #     s=0
-        #     j=0
-        #     while j<len(jugador_turno.cartas):
-        #         if jugador_turno.cartas[j].tipo=="Asesino":
-        #             s=1
-        #         j+=1
-        #     if s==1:
-        #         carta_perdida=int(input(jugador_turno.nombre + """si tiene la carta Asesino
-        #                   elije que carta perder 1/2"""))-1
-        #         jugador_duda.cartas.pop(carta_perdida)
-                
-        #     else:
-        #         carta_perdida=int(input(jugador_turno.nombre + """ no tiene la carta asesino
-        #                   elije que carta perder 1/2"""))-1
-        #         jugador_turno.cartas.pop(carta_perdida)
-        
-        # #Duda al Intercambio, lo que significa que debe tener la carta Embajador
-        # elif accion=="X":
-        #     s=0
-        #     j=0
-        #     while j<len(jugador_turno.cartas):
-        #         if jugador_turno.cartas[j]=="Embajador":
-        #             s=1
-        #         j+=1
-        #     if s==1:
-        #         carta_perdida=int(input(jugador_turno.nombre + """ si tiene la carta Embajador
-        #                   elije que carta perder 1/2"""))-1
-                
-        #         jugador_duda.cartas.pop(carta_perdida)
             
-        #     else:
-        #         carta_perdida=int(input(jugador_turno.nombre + """ no tiene la carta Embajador
-        #                   elije que carta perder 1/2"""))-1
-        #         jugador_turno.cartas.pop(carta_perdida)
-        
-        # #Duda al Robo, lo que significa que debe tener la carta Capitan
-        # elif accion=="S":
-        #     s=0
-        #     j=0
-        #     while j<len(jugador_turno.cartas):
-        #         if jugador_turno.cartas[j].tipo=="Capitan":
-        #             s=1
-        #         j+=1    
-        #     if s==1:
-        #         carta_perdida=int(input(jugador_turno.nombre + """ si tiene la carta Capitan
-        #                   elije que carta perder 1/2"""))-1
-                
-        #         jugador_duda.cartas.pop(carta_perdida)
-            
-        #     else:
-        #         carta_perdida=int(input(jugador_turno.nombre + """ no tiene la carta Capitan
-        #                   elije que carta perder 1/2"""))-1
-        #         jugador_turno.cartas.pop(carta_perdida)
-
-
+          print("")
+          #Fin del juego
+          print("¡Se acabo el juego!")
+          print("¡El ganador del juego es " + jugadores[0].nombre + "!")
