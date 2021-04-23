@@ -81,4 +81,6 @@ for j in jugadores:
     while i <= 40:
         print("")
         i += 1
+
+#Aqui comienza el juego
 Coup.Juego(jugadores, mazo_barajado)
